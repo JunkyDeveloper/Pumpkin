@@ -1,5 +1,6 @@
 use crate::entity::mob::{Mob, MobEntity};
 use crate::entity::{Entity, NBTStorage};
+use futures::executor::block_on;
 use std::sync::{Arc, Weak};
 
 pub struct CopperGolem {
@@ -15,10 +16,8 @@ impl CopperGolem {
             let mob_arc: Arc<dyn Mob> = mob_arc.clone();
             Arc::downgrade(&mob_arc)
         };
-        {
-            let mut goal_selector = mob_arc.mob_entity.goals_selector.lock().await;
-            let mut target_selector = mob_arc.mob_entity.target_selector.lock().await;
-        }
+        let mut goal_selector = block_on(mob_arc.mob_entity.goals_selector.lock());
+        let mut target_selector = block_on(mob_arc.mob_entity.target_selector.lock());
         mob_arc
     }
 }
