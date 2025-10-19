@@ -1,16 +1,24 @@
-use crate::entity::NBTStorage;
 use crate::entity::mob::{Mob, MobEntity};
-use pumpkin_data::entity::MobCategory;
+use crate::entity::{Entity, NBTStorage};
+use std::sync::Arc;
 
 pub struct CopperGolem {
     mob_entity: MobEntity,
-    mob_category: MobCategory,
+}
+
+impl CopperGolem {
+    pub fn make(entity: Entity) -> Arc<Self> {
+        let mob_entity = MobEntity::new(entity);
+        let golem = Self { mob_entity };
+        let mob_arc = Arc::new(golem);
+        mob_arc
+    }
 }
 
 impl NBTStorage for CopperGolem {}
 
 impl Mob for CopperGolem {
     fn get_mob_entity(&self) -> &MobEntity {
-        todo!()
+        &self.mob_entity
     }
 }
