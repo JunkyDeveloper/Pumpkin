@@ -96,6 +96,10 @@ impl BlockEntity for ChestBlockEntity {
     fn as_any(&self) -> &dyn Any {
         self
     }
+
+    fn as_block_entity(&self) -> &dyn BlockEntity {
+        self
+    }
 }
 
 impl ViewerCountListener for ChestBlockEntity {

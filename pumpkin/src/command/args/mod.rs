@@ -14,15 +14,7 @@ use pumpkin_util::{
     GameMode,
     math::{position::BlockPos, vector2::Vector2, vector3::Vector3},
 };
-
-use super::{
-    CommandSender,
-    dispatcher::CommandError,
-    tree::{CommandTree, RawArgs},
-};
-use crate::entity::EntityBase;
-use crate::world::bossbar::{BossbarColor, BossbarDivisions};
-use crate::{entity::player::Player, server::Server};
+use pumpkin_world::block::entities::BlockEntity;
 
 pub mod block;
 pub mod bool;
@@ -103,6 +95,7 @@ pub enum Arg<'a> {
     Item(&'a str),
     ResourceLocation(&'a str),
     Block(&'a str),
+    BlockEntity(Arc<dyn BlockEntity>),
     BlockPredicate(&'a str),
     BossbarColor(BossbarColor),
     BossbarStyle(BossbarDivisions),
