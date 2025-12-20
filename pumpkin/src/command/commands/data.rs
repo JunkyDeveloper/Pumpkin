@@ -1,3 +1,4 @@
+use crate::command::CommandResult;
 use crate::command::args::entity::EntityArgumentConsumer;
 use crate::command::args::position_block::BlockPosArgumentConsumer;
 use crate::command::tree::builder::literal;
@@ -8,7 +9,6 @@ use crate::command::{
 };
 use crate::entity::NBTStorage;
 use CommandError::InvalidConsumption;
-use async_trait::async_trait;
 use pumpkin_nbt::compound::NbtCompound;
 use pumpkin_nbt::tag::NbtTag;
 use pumpkin_registry::VanillaDimensionType;
@@ -25,60 +25,24 @@ const ARG_POSITION: &str = "position";
 
 struct GetEntityDataExecutor;
 
-#[async_trait]
 impl CommandExecutor for GetEntityDataExecutor {
-    async fn execute<'a>(
-        &self,
-        sender: &mut CommandSender,
-        _server: &crate::server::Server,
-        args: &ConsumedArgs<'a>,
-    ) -> Result<(), CommandError> {
-        let Some(Arg::Entity(entity)) = args.get(&ARG_ENTITY) else {
-            return Err(InvalidConsumption(Some(ARG_ENTITY.into())));
-        };
-        let data_storage = entity.as_nbt_storage();
+    fn execute<'a>(
+        &'a self,
+        sender: &'a CommandSender,
+        _server: &'a crate::server::Server,
+        args: &'a ConsumedArgs<'a>,
+    ) -> CommandResult<'a> {
+        Box::pin(async move {
+            let Some(Arg::Entity(entity)) = args.get(&ARG_ENTITY) else {
+                return Err(InvalidConsumption(Some(ARG_ENTITY.into())));
+            };
+            let data_storage = entity.as_nbt_storage();
 
-        sender
-            .send_message(display_entity_data(data_storage, entity.get_display_name().await).await?)
-            .await;
-        Ok(())
-    }
-}
-
-struct GetBlockEntityDataExecutor;
-
-#[async_trait]
-impl CommandExecutor for GetBlockEntityDataExecutor {
-    async fn execute<'a>(
-        &self,
-        sender: &mut CommandSender,
-        _server: &crate::server::Server,
-        args: &ConsumedArgs<'a>,
-    ) -> Result<(), CommandError> {
-        let Some(Arg::BlockPos(position)) = args.get(&ARG_POSITION) else {
-            return Err(InvalidConsumption(Some(ARG_POSITION.into())));
-        };
-        let Some(block_entity) = _server
-            .get_world_from_dimension(VanillaDimensionType::Overworld)
-            .await
-            .get_block_entity(position)
-            .await
-        else {
-            return Err(InvalidConsumption(Some(format!(
-                "Block wasn't found! at the location ({}, {}, {})",
-                position.0.x, position.0.y, position.0.z
-            ))));
-        };
-        sender
-            .send_message(
-                display_block_entity_data(
-                    block_entity.as_block_entity(),
-                    TextComponent::translate(block_entity.resource_location(), []),
-                )
-                .await?,
-            )
-            .await;
-        Ok(())
+            sender
+                .send_message(display_data(data_storage, entity.get_display_name().await).await?)
+                .await;
+            Ok(())
+        })
     }
 }
 
@@ -266,7 +230,7 @@ async fn display_entity_data(
     let mut nbt = NbtCompound::new();
     storage.write_nbt(&mut nbt).await;
     let display = snbt_colorful_display(&NbtTag::Compound(nbt), 0)
-        .map_err(|string| CommandError::CommandFailed(Box::new(TextComponent::text(string))))?;
+        .map_err(|string| CommandError::CommandFailed(TextComponent::text(string)))?;
     Ok(TextComponent::translate(
         "commands.data.entity.query",
         [target_name, display],
